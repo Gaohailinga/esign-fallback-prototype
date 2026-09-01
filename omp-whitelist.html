@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>档案系统 - 签约白名单管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #f0f2f5; color: #333; }
+        .topbar { height: 50px; background: linear-gradient(90deg, #0a7ab3, #0d8fd1); display: flex; align-items: center; color: #fff; font-size: 14px; }
+        .topbar .brand { padding: 0 20px; font-size: 16px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+        .topbar .brand small { font-size: 12px; opacity: 0.85; }
+        .topbar .menu { display: flex; flex: 1; }
+        .topbar .menu-item { padding: 0 18px; height: 50px; line-height: 50px; cursor: pointer; opacity: 0.9; }
+        .topbar .menu-item:hover { background: rgba(255,255,255,0.1); }
+        .topbar .menu-item.active { background: rgba(255,255,255,0.18); font-weight: 500; }
+        .topbar .user { padding: 0 20px; display: flex; align-items: center; gap: 8px; }
+        .topbar .avatar { width: 26px; height: 26px; border-radius: 50%; background: #fff; color: #0d8fd1; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .container { display: flex; height: calc(100vh - 50px); }
+        .sidebar { width: 180px; background: #fff; border-right: 1px solid #e8e8e8; padding-top: 10px; }
+        .sidebar-group-title { padding: 12px 16px; font-size: 12px; color: #999; font-weight: 500; }
+        .sidebar-item { padding: 12px 16px; font-size: 13px; color: #333; cursor: pointer; display: flex; align-items: center; gap: 8px; border-left: 3px solid transparent; }
+        .sidebar-item:hover { background: #f5f5f5; color: #0d8fd1; }
+        .sidebar-item.active { background: #e6f7ff; color: #0d8fd1; border-left-color: #0d8fd1; }
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .tabs { height: 42px; background: #fff; border-bottom: 1px solid #e8e8e8; display: flex; align-items: flex-end; padding-left: 16px; }
+        .tab { padding: 9px 16px; font-size: 13px; cursor: pointer; border: 1px solid transparent; border-bottom: none; margin-right: 4px; border-radius: 4px 4px 0 0; }
+        .tab.active { background: #fff; border-color: #e8e8e8; border-bottom: 1px solid #fff; margin-bottom: -1px; color: #0d8fd1; font-weight: 500; }
+        .tab-close { margin-left: 6px; color: #999; }
+        .content { flex: 1; padding: 16px; overflow: auto; }
+        .page-title { font-size: 15px; font-weight: 500; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+        .page-title::before { content: ""; display: inline-block; width: 3px; height: 16px; background: #0d8fd1; border-radius: 2px; }
+        .card { background: #fff; border-radius: 4px; border: 1px solid #e8e8e8; margin-bottom: 16px; }
+        .card-body { padding: 16px; }
+        .search-form { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .form-row { display: flex; align-items: center; }
+        .form-label { width: 90px; text-align: right; margin-right: 10px; font-size: 13px; color: #666; white-space: nowrap; }
+        .form-control, .form-select { flex: 1; height: 32px; border: 1px solid #d9d9d9; border-radius: 4px; padding: 0 10px; font-size: 13px; outline: none; }
+        .form-control:focus, .form-select:focus { border-color: #0d8fd1; }
+        .form-control.error { border-color: #ff4d4f; background: #fff2f0; }
+        .form-control.error:focus { border-color: #ff4d4f; }
+        .field-error { color: #ff4d4f; font-size: 12px; margin-top: 6px; min-height: 18px; }
+        .toast { position: fixed; top: 16px; right: 16px; padding: 10px 16px; border-radius: 4px; font-size: 13px; color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000; opacity: 0; transform: translateY(-10px); transition: all 0.25s ease; }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast.success { background: #52c41a; }
+        .toast.error { background: #ff4d4f; }
+        .toast.info { background: #1890ff; }
+        .date-range { display: flex; align-items: center; gap: 6px; flex: 1; }
+        .date-range input { flex: 1; min-width: 0; }
+        .search-actions { display: flex; justify-content: space-between; margin-top: 16px; }
+        .btn { height: 32px; padding: 0 16px; border-radius: 4px; border: 1px solid transparent; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+        .btn-primary { background: #1890ff; color: #fff; border-color: #1890ff; }
+        .btn-primary:hover { background: #40a9ff; border-color: #40a9ff; }
+        .btn-success { background: #13c2c2; color: #fff; border-color: #13c2c2; }
+        .btn-success:hover { background: #36cfc9; border-color: #36cfc9; }
+        .btn-default { background: #fff; border-color: #d9d9d9; color: #555; }
+        .btn-default:hover { border-color: #0d8fd1; color: #0d8fd1; }
+        .btn-danger { background: #ff4d4f; color: #fff; border-color: #ff4d4f; }
+        .btn-text { border: none; background: transparent; color: #1890ff; padding: 0 6px; height: auto; }
+        .btn-text:hover { color: #40a9ff; }
+        .right-actions { display: flex; gap: 8px; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+        .stat-card { background: #fff; border-radius: 4px; border: 1px solid #e8e8e8; padding: 16px; text-align: center; }
+        .stat-value { font-size: 24px; font-weight: 600; color: #0d8fd1; margin-bottom: 6px; }
+        .stat-label { font-size: 12px; color: #666; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        th { background: #fafafa; color: #666; font-weight: 500; }
+        tr:hover { background: #e6f7ff; }
+        .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .tag-inactive { background: #f5f5f5; color: #666; border: 1px solid #d9d9d9; }
+        .tag-active { background: #e6f7ff; color: #0d8fd1; border: 1px solid #91d5ff; }
+        .tag-cancelled { background: #f2f0ff; color: #722ed1; border: 1px solid #d3adf7; }
+        .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; }
+        .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-mask.show { display: flex; }
+        .modal { background: #fff; border-radius: 4px; width: 700px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 15px; font-weight: 500; }
+        .modal-close { font-size: 18px; color: #999; cursor: pointer; }
+        .modal-body { padding: 20px; overflow: auto; flex: 1; }
+        .modal-footer { padding: 12px 20px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; }
+        .modal-form .form-group.full { grid-column: 1 / -1; }
+        .modal-form .form-label { width: auto; text-align: left; margin-bottom: 6px; display: block; }
+        .modal-form .required::before { content: "*"; color: #f5222d; margin-right: 4px; }
+        .modal-form .form-control, .modal-form .form-select { width: 100%; }
+        .modal-form textarea.form-control { height: 80px; padding: 8px 10px; resize: vertical; }
+        .section-title { font-size: 14px; font-weight: 500; margin: 20px 0 12px; padding-left: 8px; border-left: 3px solid #0d8fd1; }
+        .detail-row { display: flex; margin-bottom: 12px; font-size: 13px; }
+        .detail-label { width: 120px; color: #666; text-align: right; margin-right: 12px; }
+        .detail-value { flex: 1; color: #333; }
+        .hidden { display: none !important; }
+        .tabs-sub { display: flex; border-bottom: 1px solid #e8e8e8; margin-bottom: 16px; }
+        .tab-sub { padding: 8px 16px; font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab-sub.active { color: #0d8fd1; border-bottom-color: #0d8fd1; font-weight: 500; }
+        .log-item { padding: 10px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .log-time { color: #999; margin-right: 10px; }
+        .log-type { display: inline-block; padding: 2px 6px; border-radius: 4px; background: #f0f0f0; margin-right: 8px; }
+        .pagination { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 16px; font-size: 13px; }
+        .pagination button { padding: 4px 10px; border: 1px solid #d9d9d9; background: #fff; border-radius: 4px; cursor: pointer; }
+        .pagination button.active { background: #1890ff; color: #fff; border-color: #1890ff; }
+        .pagination button:disabled { color: #bbb; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <div class="brand">统一门户系统 <small>当前内网</small></div>
+        <div class="menu">
+            <div class="menu-item">用户管理</div>
+            <div class="menu-item">机构管理</div>
+            <div class="menu-item">风控系统</div>
+            <div class="menu-item">资金管理</div>
+            <div class="menu-item">交易管理</div>
+            <div class="menu-item">机具管理</div>
+            <div class="menu-item">银行合作</div>
+            <div class="menu-item">分润管理</div>
+            <div class="menu-item">产品管理</div>
+            <div class="menu-item active">档案系统</div>
+        </div>
+        <div class="user"><div class="avatar">P</div> P500009</div>
+    </div>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-group-title">档案系统</div>
+            <div class="sidebar-item active" onclick="showToast('已在白名单管理', 'info')">签约白名单管理</div>
+        </div>
+        <div class="main">
+            <div class="tabs">
+                <div class="tab">首页</div>
+                <div class="tab active">签约白名单管理 <span class="tab-close">×</span></div>
+            </div>
+            <div class="content">
+                <div class="page-title">签约白名单管理</div>
+                <div class="stats">
+                    <div class="stat-card"><div class="stat-value" id="stat-total">0</div><div class="stat-label">白名单总数</div></div>
+                    <div class="stat-card"><div class="stat-value" id="stat-inactive">0</div><div class="stat-label">未核验</div></div>
+                    <div class="stat-card"><div class="stat-value" id="stat-active">0</div><div class="stat-label">已核验</div></div>
+                    <div class="stat-card"><div class="stat-value" id="stat-cancelled">0</div><div class="stat-label">已取消</div></div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="search-form">
+                            <div class="form-row"><div class="form-label">白名单编号：</div><input class="form-control" id="q-voucherNo" placeholder="请输入白名单编号"></div>
+                            <div class="form-row"><div class="form-label">机构ID/商户ID：</div><input class="form-control" id="q-orgId" placeholder="请输入机构ID/商户ID"></div>
+                            <div class="form-row"><div class="form-label">机构名称/商户名称：</div><input class="form-control" id="q-orgName" placeholder="请输入机构名称/商户名称"></div>
+                            <div class="form-row"><div class="form-label">身份核验状态：</div><select class="form-select" id="q-status"><option value="">请选择</option><option value="1">未核验</option><option value="2">已核验</option><option value="4">已取消</option></select></div>
+                            <div class="form-row"><div class="form-label">创建时间：</div><div class="date-range"><input type="text" class="form-control" placeholder="开始日期"> ~ <input type="text" class="form-control" placeholder="结束日期"></div></div>
+                        </div>
+                        <div class="search-actions">
+                            <div>
+                                <button class="btn btn-primary" onclick="openAddModal()">+ 新增白名单</button>
+                            </div>
+                            <div class="right-actions">
+                                <button class="btn btn-default" onclick="resetSearch()">重置</button>
+                                <button class="btn btn-success" onclick="doSearch()">查询</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>序号</th>
+                                    <th>白名单编号</th>
+                                    <th>主体类型</th>
+                                    <th>机构ID/商户ID</th>
+                                    <th>机构名称/商户名称</th>
+                                    <th>身份核验状态</th>
+                                    <th>创建时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="list-body"></tbody>
+                        </table>
+                        <div class="pagination">
+                            <span>共 <span id="page-total">0</span> 条</span>
+                            <button disabled>上一页</button>
+                            <button class="active">1</button>
+                            <button>2</button>
+                            <button>3</button>
+                            <button>下一页</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增白名单弹窗 -->
+    <div class="modal-mask" id="addModal">
+        <div class="modal">
+            <div class="modal-header"><div class="modal-title">新增白名单</div><div class="modal-close" onclick="closeModal('addModal')">×</div></div>
+            <div class="modal-body">
+                <div class="modal-form">
+                    <div class="form-group full">
+                        <div class="form-label required">主体类型</div>
+                        <select class="form-select" id="add-subjectType" onchange="onSubjectTypeChange()"><option value="">请选择</option><option value="1">机构</option><option value="2">商户</option></select>
+                        <div class="field-error" id="add-subjectType-error"></div>
+                    </div>
+                    <div class="form-group full" id="add-orgId-wrap">
+                        <div class="form-label required">机构ID</div>
+                        <input class="form-control" id="add-orgId" placeholder="请输入机构ID" onblur="autoFillOrgName()">
+                        <div class="field-error" id="add-orgId-error"></div>
+                    </div>
+                    <div class="form-group full" id="add-orgName-wrap">
+                        <div class="form-label">机构名称</div>
+                        <input class="form-control" id="add-orgName" placeholder="自动带出，可编辑" oninput="onOrgNameInput()">
+                    </div>
+                    <div class="form-group full">
+                        <div class="form-label required">备注</div>
+                        <textarea class="form-control" id="add-remark" placeholder="请输入备注信息"></textarea>
+                        <div class="field-error" id="add-remark-error"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('addModal')">取消</button>
+                <button class="btn btn-primary" onclick="submitAdd()">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 取消确认弹窗 -->
+    <div class="modal-mask" id="cancelConfirmModal">
+        <div class="modal" style="width: 520px;">
+            <div class="modal-header"><div class="modal-title">确认取消白名单</div><div class="modal-close" onclick="closeModal('cancelConfirmModal')">×</div></div>
+            <div class="modal-body">
+                <div class="detail-row" style="margin-bottom: 8px;"><div class="detail-label">白名单编号：</div><div class="detail-value" id="cc-voucherNo">-</div></div>
+                <div class="detail-row" style="margin-bottom: 8px;"><div class="detail-label">机构ID/商户ID：</div><div class="detail-value" id="cc-orgId">-</div></div>
+                <div class="detail-row" style="margin-bottom: 16px;"><div class="detail-label">身份核验状态：</div><div class="detail-value" id="cc-status">-</div></div>
+                <div class="detail-row"><div class="detail-label" style="vertical-align: top;">取消原因：</div><div class="detail-value"><textarea class="form-control" id="cc-reason" rows="3" placeholder="请输入取消原因，必填"></textarea><div class="field-error" id="cc-reason-error"></div></div></div>
+                <div style="background: #fff7e6; border: 1px solid #ffd591; border-radius: 4px; padding: 10px 12px; margin-top: 16px; font-size: 12px; color: #d46b08;">
+                    <strong>提示：</strong>取消后该机构/商户将无法再通过此白名单进入兜底入口。取消后如需兜底，需重新新增白名单。
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('cancelConfirmModal')">再想想</button>
+                <button class="btn btn-danger" onclick="submitCancel()">确认取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 详情弹窗 -->
+    <div class="modal-mask" id="detailModal">
+        <div class="modal" style="width: 800px;">
+            <div class="modal-header"><div class="modal-title">白名单详情</div><div class="modal-close" onclick="closeModal('detailModal')">×</div></div>
+            <div class="modal-body">
+                <div class="tabs-sub">
+                    <div class="tab-sub active" onclick="switchDetailTab(this, 'tab-basic')">白名单信息</div>
+                    <div class="tab-sub" onclick="switchDetailTab(this, 'tab-log')">操作日志</div>
+                </div>
+                <div id="tab-basic">
+                    <div class="detail-row"><div class="detail-label">白名单编号：</div><div class="detail-value" id="d-voucherNo">-</div></div>
+                    <div class="detail-row"><div class="detail-label">主体类型：</div><div class="detail-value" id="d-subjectType">-</div></div>
+                    <div class="detail-row"><div class="detail-label">机构ID/商户ID：</div><div class="detail-value" id="d-orgId">-</div></div>
+                    <div class="detail-row"><div class="detail-label">机构名称/商户名称：</div><div class="detail-value" id="d-orgName">-</div></div>
+                    <div class="detail-row"><div class="detail-label">身份核验状态：</div><div class="detail-value" id="d-status">-</div></div>
+                    <div class="detail-row"><div class="detail-label">核验通过时间：</div><div class="detail-value" id="d-verifyTime">-</div></div>
+                    <div class="detail-row"><div class="detail-label">创建时间：</div><div class="detail-value" id="d-createTime">-</div></div>
+                    <div class="detail-row"><div class="detail-label">操作人：</div><div class="detail-value" id="d-operator">-</div></div>
+                    <div class="detail-row"><div class="detail-label">备注：</div><div class="detail-value" id="d-remark">-</div></div>
+                    <div class="detail-row" style="margin-top: 12px;">
+                        <div class="detail-label"></div>
+                        <div class="detail-value">
+                            <a href="javascript:void(0);" onclick="showToast('下载协议文件（示例）','success')" class="link-primary">协议文件下载</a>
+                        </div>
+                    </div>
+                </div>
+                <div id="tab-log" class="hidden">
+                    <div id="d-logs"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-default" onclick="closeModal('detailModal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.onerror = function(msg, url, line, col, err) {
+            document.body.innerHTML = '<div style="padding:20px;color:red;white-space:pre-wrap;font-family:monospace;">JS ERROR: ' + msg + '\nLine: ' + line + '\n' + (err && err.stack || '') + '</div>';
+        };
+        const statusMap = {1: {name: '未核验', class: 'tag-inactive'}, 2: {name: '已核验', class: 'tag-active'}, 4: {name: '已取消', class: 'tag-cancelled'}};
+        const verifyMap = {0: '-', 1: '运营商三要素核验'};
+        let mockData = [
+            {id: 1, voucherNo: 'SVC202607310001', subjectType: 1, orgId: 'ORG00012345', orgName: '北京天阙科技有限公司', status: 2, createTime: '2026-07-31 10:00:00', verifyMethod: 1, verifyTime: '2026-07-31 10:05:22', operator: 'admin', remark: '运营手动加白'},
+            {id: 2, voucherNo: 'SVC202607310002', subjectType: 2, orgId: 'ORG00012346', orgName: '随行付支付有限公司', status: 1, createTime: '2026-07-31 09:30:00', verifyMethod: 0, verifyTime: '', operator: 'admin', remark: '事业单位类型'},
+            {id: 3, voucherNo: 'SVC202607300003', subjectType: 1, orgId: 'ORG00012347', orgName: '重庆鑫联随行科技有限公司', status: 2, createTime: '2026-07-01 11:00:00', verifyMethod: 1, verifyTime: '2026-07-01 11:10:00', operator: 'admin', remark: ''},
+            {id: 4, voucherNo: 'SVC202607290004', subjectType: 2, orgId: 'ORG00012348', orgName: '上海测试科技有限公司', status: 4, createTime: '2026-07-15 14:00:00', verifyMethod: 1, verifyTime: '2026-07-15 14:20:00', operator: 'admin', remark: '运营手动取消白名单'}
+        ];
+
+        function renderList(data) {
+            const tbody = document.getElementById('list-body');
+            tbody.innerHTML = data.map((item, idx) => {
+                const st = statusMap[item.status];
+                const subjectTypeName = item.subjectType === 1 ? '机构' : (item.subjectType === 2 ? '商户' : '-');
+                return `<tr>
+                    <td>${idx + 1}</td>
+                    <td>${item.voucherNo}</td>
+                    <td>${subjectTypeName}</td>
+                    <td>${item.orgId}</td>
+                    <td>${item.orgName}</td>
+                    <td><span class="tag ${st.class}"><span class="status-dot"></span>${st.name}</span></td>
+                    <td>${item.createTime}</td>
+                    <td>
+                        <button class="btn btn-text" onclick="openDetail(${item.id})">详情</button>
+                        ${item.status === 1 ? `<button class="btn btn-text" style="color:#ff4d4f" onclick="openCancelConfirm(${item.id})">取消</button>` : ''}
+                    </td>
+                </tr>`;
+            }).join('');
+            updateStats(data);
+            document.getElementById('page-total').textContent = data.length;
+        }
+
+        function updateStats(data) {
+            const total = data.length;
+            const inactive = data.filter(d => d.status === 1).length;
+            const active = data.filter(d => d.status === 2).length;
+            const cancelled = data.filter(d => d.status === 4).length;
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-inactive').textContent = inactive;
+            document.getElementById('stat-active').textContent = active;
+            document.getElementById('stat-cancelled').textContent = cancelled;
+        }
+
+        function doSearch() {
+            const no = document.getElementById('q-voucherNo').value.trim();
+            const orgId = document.getElementById('q-orgId').value.trim();
+            const orgName = document.getElementById('q-orgName').value.trim();
+            const status = document.getElementById('q-status').value;
+            const result = mockData.filter(item => {
+                return (!no || item.voucherNo.includes(no)) &&
+                       (!orgId || item.orgId.includes(orgId)) &&
+                       (!orgName || item.orgName.includes(orgName)) &&
+                       (!status || item.status === parseInt(status));
+            });
+            renderList(result);
+        }
+
+        function resetSearch() {
+            document.getElementById('q-voucherNo').value = '';
+            document.getElementById('q-orgId').value = '';
+            document.getElementById('q-orgName').value = '';
+            document.getElementById('q-status').value = '';
+            renderList(mockData);
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add('show'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+        const subjectTypeLabelMap = {1: {id: '机构ID', name: '机构名称'}, 2: {id: '商户ID', name: '商户名称'}};
+        function onSubjectTypeChange() {
+            const subjectType = document.getElementById('add-subjectType').value;
+            const idWrap = document.getElementById('add-orgId-wrap');
+            const idInput = document.getElementById('add-orgId');
+            const idLabel = idWrap.querySelector('.form-label');
+            const nameWrap = document.getElementById('add-orgName-wrap');
+            const nameInput = document.getElementById('add-orgName');
+            const nameLabel = nameWrap.querySelector('.form-label');
+            if (subjectType) {
+                idLabel.textContent = subjectTypeLabelMap[subjectType].id;
+                idInput.placeholder = '请输入' + subjectTypeLabelMap[subjectType].id;
+                nameLabel.textContent = subjectTypeLabelMap[subjectType].name;
+                nameInput.placeholder = '请输入' + subjectTypeLabelMap[subjectType].name;
+            } else {
+                idLabel.textContent = '机构ID/商户ID';
+                idInput.placeholder = '请输入机构ID/商户ID';
+                nameLabel.textContent = '机构名称/商户名称';
+                nameInput.placeholder = '请输入机构名称/商户名称';
+            }
+        }
+        function autoFillOrgName() {
+            const subjectType = document.getElementById('add-subjectType').value;
+            const orgId = document.getElementById('add-orgId').value.trim();
+            const orgNameEl = document.getElementById('add-orgName');
+            const orgName = orgNameEl.value.trim();
+            if (!subjectType) return;
+            if (orgId && !orgName) {
+                orgNameEl.value = orgId + '_公司';
+            } else if (orgName && !orgId) {
+                document.getElementById('add-orgId').value = orgName + '_ID';
+            }
+        }
+        function onOrgNameInput() {
+            const subjectType = document.getElementById('add-subjectType').value;
+            const orgIdEl = document.getElementById('add-orgId');
+            const orgName = document.getElementById('add-orgName').value.trim();
+            const orgId = orgIdEl.value.trim();
+            if (subjectType && orgName && !orgId) {
+                orgIdEl.value = orgName + '_ID';
+            }
+        }
+        function openAddModal() {
+            ['subjectType','orgId','orgName','remark'].forEach(id => {
+                const el = document.getElementById('add-' + id);
+                if (el) el.value = '';
+            });
+            onSubjectTypeChange();
+            clearFieldError('add-subjectType');
+            clearFieldError('add-orgId');
+            clearFieldError('add-orgName');
+            clearFieldError('add-remark');
+            openModal('addModal');
+        }
+
+        function submitAdd() {
+            const orgIdEl = document.getElementById('add-orgId');
+            const subjectTypeEl = document.getElementById('add-subjectType');
+            const remarkEl = document.getElementById('add-remark');
+            const orgId = orgIdEl.value.trim();
+            const orgName = document.getElementById('add-orgName').value.trim();
+            const subjectType = parseInt(subjectTypeEl.value) || 0;
+            const remark = remarkEl.value.trim();
+            let valid = true;
+            if (!subjectType) {
+                showFieldError('add-subjectType', '请先选择主体类型');
+                valid = false;
+            } else { clearFieldError('add-subjectType'); }
+            if (subjectType && !orgId) { showFieldError('add-orgId', '请填写' + (subjectTypeLabelMap[subjectType].id)); valid = false; } else { clearFieldError('add-orgId'); }
+            if (subjectType && !orgName) { showFieldError('add-orgName', '请填写' + (subjectTypeLabelMap[subjectType].name)); valid = false; } else { clearFieldError('add-orgName'); }
+            if (!remark) { showFieldError('add-remark', '请填写备注'); valid = false; } else { clearFieldError('add-remark'); }
+            if (!valid) return;
+            const date = new Date();
+            const dateStr = date.toISOString().slice(0,10).replace(/-/g,'');
+            const seq = String(mockData.length + 1).padStart(4, '0');
+            mockData.unshift({
+                id: Date.now(),
+                voucherNo: 'SVC' + dateStr + seq,
+                subjectType: subjectType,
+                orgId: orgId,
+                orgName: orgName || orgId + '_公司',
+                status: 1,
+                createTime: formatDateTime(date),
+                verifyMethod: 0,
+                verifyTime: '',
+                operator: 'P500009',
+                remark: remark
+            });
+            closeModal('addModal');
+            renderList(mockData);
+            showToast('新增白名单成功', 'success');
+        }
+
+        let cancellingId = null;
+        function openCancelConfirm(id) {
+            const item = mockData.find(d => d.id === id);
+            if (!item) return;
+            if (item.status !== 1) { showToast('仅未核验状态的白名单可取消', 'error'); return; }
+            cancellingId = id;
+            document.getElementById('cc-voucherNo').textContent = item.voucherNo;
+            document.getElementById('cc-orgId').textContent = item.orgId;
+            const st = statusMap[item.status];
+            document.getElementById('cc-status').innerHTML = `<span class="tag ${st.class}">${st.name}</span>`;
+            const reasonEl = document.getElementById('cc-reason');
+            reasonEl.value = '';
+            clearFieldError('cc-reason');
+            openModal('cancelConfirmModal');
+        }
+
+        function submitCancel() {
+            const reasonEl = document.getElementById('cc-reason');
+            const reason = reasonEl.value.trim();
+            if (!reason) {
+                showFieldError('cc-reason', '请填写取消原因');
+                reasonEl.focus();
+                return;
+            }
+            clearFieldError('cc-reason');
+            const item = mockData.find(d => d.id === cancellingId);
+            if (!item) return;
+            item.status = 4;
+            item.remark = (item.remark ? item.remark + '；' : '') + '运营手动取消白名单，原因：' + reason;
+            item.operator = 'P500009';
+            closeModal('cancelConfirmModal');
+            renderList(mockData);
+            showToast('白名单已取消', 'success');
+        }
+
+        function openDetail(id) {
+            const item = mockData.find(d => d.id === id);
+            if (!item) return;
+            const subjectTypeName = item.subjectType === 1 ? '机构' : (item.subjectType === 2 ? '商户' : '-');
+            document.getElementById('d-voucherNo').textContent = item.voucherNo;
+            document.getElementById('d-subjectType').textContent = subjectTypeName;
+            document.getElementById('d-orgId').textContent = item.orgId;
+            document.getElementById('d-orgName').textContent = item.orgName;
+            const st = statusMap[item.status];
+            document.getElementById('d-status').innerHTML = `<span class="tag ${st.class}">${st.name}</span>`;
+            document.getElementById('d-verifyTime').textContent = item.verifyTime || '-';
+            document.getElementById('d-createTime').textContent = item.createTime;
+            document.getElementById('d-operator').textContent = item.operator;
+            document.getElementById('d-remark').textContent = item.remark || '-';
+            document.getElementById('d-logs').innerHTML = generateLogs(item);
+            openModal('detailModal');
+        }
+
+        function generateLogs(item) {
+            const logs = [];
+            logs.push({time: item.createTime, type: '创建', content: `运营人员 ${item.operator} 新增白名单`});
+            if (item.verifyTime) logs.push({time: item.verifyTime, type: '已核验', content: `身份核验通过，核验方式：${verifyMap[item.verifyMethod]}`});
+            if (item.status === 4 && item.remark && item.remark.includes('运营手动取消白名单')) logs.push({time: item.updated_at || item.createTime, type: '取消', content: item.remark || `运营人员取消白名单`});
+            return logs.map(l => `<div class="log-item"><span class="log-time">${l.time}</span><span class="log-type">${l.type}</span>${l.content}</div>`).join('');
+        }
+
+        function showToast(message, type) {
+            let toast = document.getElementById('global-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'global-toast';
+                toast.className = 'toast';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            toast.className = 'toast ' + (type || 'info');
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        function showFieldError(fieldId, message) {
+            const el = document.getElementById(fieldId);
+            const errorEl = document.getElementById(fieldId + '-error');
+            if (el) el.classList.add('error');
+            if (errorEl) errorEl.textContent = message;
+        }
+
+        function clearFieldError(fieldId) {
+            const el = document.getElementById(fieldId);
+            const errorEl = document.getElementById(fieldId + '-error');
+            if (el) el.classList.remove('error');
+            if (errorEl) errorEl.textContent = '';
+        }
+
+        function switchDetailTab(el, tabId) {
+            document.querySelectorAll('.tab-sub').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            ['tab-basic', 'tab-log'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('hidden', id !== tabId);
+            });
+        }
+
+        function formatDateTime(date) {
+            const pad = n => String(n).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        }
+
+        renderList(mockData);
+    </script>
+</body>
+</html>

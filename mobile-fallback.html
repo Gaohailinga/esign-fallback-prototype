@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>封装层兜底入口与身份核验</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; background: #F5F6FA; color: #1A1A1A; -webkit-font-smoothing: antialiased; }
+.demo-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.demo-btns button { padding: 6px 12px; border-radius: 16px; border: 1px solid #d9d9d9; background: #fff; font-size: 12px; color: #555; cursor: pointer; }
+.demo-btns button.active { background: #3B8CFF; color: #fff; border-color: #3B8CFF; }
+.phone-frame { max-width: 414px; margin: 0 auto 40px; min-height: 100vh; position: relative; padding-bottom: 100px; background: #F5F6FA; box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
+.screen { display: none; animation: fadeIn 0.25s ease; }
+.screen.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.status-bar { height: 44px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 14px; font-weight: 600; position: relative; }
+.status-left { display: flex; align-items: center; gap: 6px; }
+.status-left span { font-weight: 700; }
+.status-time { position: absolute; left: 50%; transform: translateX(-50%); font-size: 15px; font-weight: 600; }
+.status-right { display: flex; align-items: center; gap: 4px; }
+.nav-bar { height: 48px; background: #fff; display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid #F0F0F0; }
+.nav-back { position: absolute; left: 16px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.nav-back.hidden { visibility: hidden; }
+.nav-back svg { width: 20px; height: 20px; }
+.nav-title { font-size: 18px; font-weight: 700; color: #1A1A1A; }
+.content { padding: 16px; }
+.protocol-card { background: linear-gradient(135deg, #3B8CFF 0%, #7AB8FF 100%); border-radius: 16px; padding: 20px 18px; position: relative; overflow: hidden; margin-bottom: 12px; min-height: 86px; display: flex; align-items: center; }
+.protocol-title { color: #fff; font-size: 17px; font-weight: 600; line-height: 1.4; max-width: 75%; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.protocol-illustration { position: absolute; right: 12px; bottom: 8px; width: 80px; height: 70px; opacity: 0.95; }
+.main-card { background: #fff; border-radius: 12px; overflow: hidden; margin-bottom: 12px; }
+.section-header { padding: 16px; display: flex; align-items: center; gap: 8px; }
+.section-line { width: 4px; height: 18px; background: #3B8CFF; border-radius: 2px; }
+.section-title { font-size: 17px; font-weight: 700; color: #1A1A1A; }
+.status-tag { margin-left: 8px; padding: 3px 10px; background: #FFF5E6; color: #FF9C00; font-size: 13px; font-weight: 500; border-radius: 12px; border: 0.5px solid #FFD699; }
+.info-list { padding: 0 16px; }
+.info-item { display: flex; justify-content: space-between; align-items: center; min-height: 52px; border-bottom: 1px solid #F0F0F0; }
+.info-item:last-child { border-bottom: none; }
+.info-label { font-size: 15px; color: #666666; }
+.info-value { font-size: 15px; color: #1A1A1A; font-weight: 500; }
+.tip-text { font-size: 14px; color: #B0B3B8; line-height: 1.7; padding: 16px; border-top: 1px solid #F0F0F0; }
+.tip-link { color: #3B8CFF; font-weight: 500; cursor: pointer; }
+.fallback-entry { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; text-align: center; cursor: pointer; }
+.fallback-entry .fb-link { font-size: 14px; color: #3B8CFF; font-weight: 600; text-decoration: none; display: block; pointer-events: none; }
+.fallback-entry .fb-tip { display: block; font-size: 12px; color: #999; margin-top: 6px; line-height: 1.5; pointer-events: none; }
+.form-card { background: #fff; border-radius: 12px; padding: 20px 16px; margin-bottom: 12px; }
+.form-item { margin-bottom: 20px; }
+.form-item:last-child { margin-bottom: 0; }
+.form-label { font-size: 14px; color: #1A1A1A; font-weight: 600; margin-bottom: 10px; display: block; }
+.form-label .required { color: #FF3B30; margin-left: 2px; }
+.input-row { display: flex; gap: 10px; }
+.input-box { flex: 1; height: 48px; background: #F5F6FA; border: 1px solid #F0F0F0; border-radius: 10px; padding: 0 14px; font-size: 15px; outline: none; }
+.input-box:focus { border-color: #3B8CFF; background: #fff; }
+.input-box.error { border-color: #FF3B30; background: #FFF5F5; }
+.send-code-btn { width: 110px; height: 48px; border-radius: 10px; border: 1px solid #3B8CFF; background: #fff; color: #3B8CFF; font-size: 13px; font-weight: 500; cursor: pointer; flex-shrink: 0; }
+.send-code-btn:disabled { border-color: #D9D9D9; color: #B0B3B8; background: #F5F6FA; cursor: not-allowed; }
+.field-error { color: #FF3B30; font-size: 12px; margin-top: 6px; min-height: 16px; }
+.disclaimer { background: #F7F8FA; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.disclaimer-title { font-size: 12px; color: #999; font-weight: 600; margin-bottom: 6px; }
+.disclaimer-text { font-size: 12px; color: #999; line-height: 1.8; }
+.result-page { padding: 40px 16px 20px; text-align: center; }
+.result-icon-wrap { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+.result-icon-wrap svg { width: 36px; height: 36px; }
+.result-title { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+.result-sub { font-size: 14px; color: #888; line-height: 1.6; margin-bottom: 24px; padding: 0 20px; }
+.state-success .result-icon-wrap { background: #E6F9F0; }
+.state-success .result-title { color: #00A856; }
+.state-fail .result-icon-wrap { background: #FFEDED; }
+.state-fail .result-title { color: #FF3B30; }
+.state-verifying .result-icon-wrap { background: #E8F0FF; }
+.state-verifying .spinner { width: 36px; height: 36px; border: 3px solid #C5D9FF; border-top-color: #3B8CFF; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.warn-box { background: #fff; border-radius: 12px; padding: 16px; margin: 0 16px 20px; font-size: 13px; color: #666; line-height: 1.7; text-align: left; }
+.state-success .warn-box { border-left: 3px solid #00A856; }
+.state-fail .warn-box { border-left: 3px solid #FF3B30; }
+.footer { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 414px; padding: 12px 16px 28px; background: #F5F6FA; }
+.btn-primary { width: 100%; height: 50px; background: #3B8CFF; color: #fff; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.btn-primary:active { opacity: 0.9; }
+.btn-primary:disabled { background: #B0C8FF; cursor: not-allowed; }
+.btn-secondary { width: 100%; height: 50px; background: #fff; color: #3B8CFF; border: 1.5px solid #3B8CFF; border-radius: 25px; font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-top: 12px; }
+.btn-secondary:active { opacity: 0.9; }
+.toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.95); background: rgba(0,0,0,0.75); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 14px; opacity: 0; pointer-events: none; transition: all 0.2s; z-index: 100; }
+.toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+</style>
+</head>
+<body>
+</div>
+<div class="phone-frame">
+<div class="screen active" id="sign-confirm">
+  <div class="status-bar">
+  <div class="status-left">
+    <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="8" width="18" height="4" rx="1" fill="#1A1A1A"/><rect x="0" y="0" width="18" height="4" rx="1" fill="#1A1A1A"/><rect x="2" y="4" width="14" height="4" rx="1" fill="#1A1A1A"/></svg>
+    <span>Sketch</span>
+    <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 0L15.5 11.5H0.5L8 0Z" fill="#1A1A1A"/></svg>
+  </div>
+  <div class="status-time">1:21 AM</div>
+  <div class="status-right">
+    <span>100%</span>
+    <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2" stroke="#1A1A1A" stroke-width="1.2" fill="none"/><rect x="3" y="3" width="16" height="6" rx="1" fill="#1A1A1A"/><path d="M23 4V8C24.5 8 25 7 25 6C25 5 24.5 4 23 4Z" fill="#1A1A1A"/></svg>
+  </div>
+</div>
+  <div class="nav-bar"><div class="nav-back hidden"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#1A1A1A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="nav-title">签约确认</div></div>
+  <div class="content">
+    <div class="protocol-card"><div class="protocol-title">碰一下活动推广协议事宜议事...</div><div class="protocol-illustration"><svg viewBox="0 0 80 70" fill="none"><path d="M55 5H20C17.5 5 15.5 7 15.5 9.5V55C15.5 57.5 17.5 59.5 20 59.5H60C62.5 59.5 64.5 57.5 64.5 55V15L55 5Z" fill="white" fill-opacity="0.95"/><path d="M55 5V15H64.5" fill="#E6F0FF"/><path d="M24 22H52" stroke="#3B8CFF" stroke-width="2.5" stroke-linecap="round"/><path d="M24 30H52" stroke="#3B8CFF" stroke-width="2.5" stroke-linecap="round"/><path d="M24 38H40" stroke="#3B8CFF" stroke-width="2.5" stroke-linecap="round"/><path d="M24 46H45" stroke="#3B8CFF" stroke-width="2.5" stroke-linecap="round"/><path d="M58 20L70 32L75 27L63 15" fill="#1677FF"/><path d="M58 20L70 32L75 27L63 15" stroke="white" stroke-width="1.5"/><circle cx="68" cy="30" r="3" fill="#3B8CFF"/></svg></div></div>
+    <div class="main-card">
+      <div class="section-header"><div class="section-line"></div><div class="section-title">签署进度</div><div class="status-tag">签署中</div></div>
+      <div class="info-list">
+        <div class="info-item"><div class="info-label">签约主题</div><div class="info-value">通途服务协议v2.1</div></div>
+        <div class="info-item"><div class="info-label">签约人</div><div class="info-value">张**</div></div>
+        <div class="info-item"><div class="info-label">证件号</div><div class="info-value">310***********8765</div></div>
+        <div class="info-item"><div class="info-label">手机号</div><div class="info-value">138****5678</div></div>
+      </div>
+      <div class="tip-text">协议签署已发起，确认信息无误可点击继续签署跳转电子签约平台。若需修改请<span class="tip-link" onclick="showToast('取消签署流程（示例）')">点此取消签署</span></div>
+    </div>
+    <div class="fallback-entry" onclick="goTo('verify')"><span class="fb-link">签约遇到了问题，[先开通服务]</span><span class="fb-tip">核验通过后可先使用服务，后续再完成正式签约</span></div>
+  </div>
+  <div class="footer"><button class="btn-primary" onclick="showToast('跳转电子签约平台（示例）')">继续签署</button></div>
+</div>
+<div class="screen" id="verify">
+  <div class="status-bar">
+  <div class="status-left">
+    <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="8" width="18" height="4" rx="1" fill="#1A1A1A"/><rect x="0" y="0" width="18" height="4" rx="1" fill="#1A1A1A"/><rect x="2" y="4" width="14" height="4" rx="1" fill="#1A1A1A"/></svg>
+    <span>Sketch</span>
+    <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 0L15.5 11.5H0.5L8 0Z" fill="#1A1A1A"/></svg>
+  </div>
+  <div class="status-time">1:21 AM</div>
+  <div class="status-right">
+    <span>100%</span>
+    <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2" stroke="#1A1A1A" stroke-width="1.2" fill="none"/><rect x="3" y="3" width="16" height="6" rx="1" fill="#1A1A1A"/><path d="M23 4V8C24.5 8 25 7 25 6C25 5 24.5 4 23 4Z" fill="#1A1A1A"/></svg>
+  </div>
+</div>
+  <div class="nav-bar"><div class="nav-back" onclick="goBack()"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#1A1A1A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="nav-title">身份核验</div></div>
+  <div class="content">
+    <div class="main-card" style="padding: 24px 16px; text-align: center;">
+      <div style="width: 64px; height: 64px; background: #E8F0FF; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+        <svg width="32" height="32" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#3B8CFF"/><path d="M24 13a6 6 0 00-6 6v4a6 6 0 0012 0v-4a6 6 0 00-6-6z" stroke="#fff" stroke-width="2" fill="none"/><path d="M16 27a9 9 0 0016 0" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      </div>
+      <div style="font-size: 18px; font-weight: 700; margin-bottom: 8px;">身份核验</div>
+      <div style="font-size: 13px; color: #888; line-height: 1.5;">请完成核验，确认身份信息</div>
+    </div>
+    <div class="form-card">
+      <div class="form-item">
+        <label class="form-label">请输入法人{法人名称}手机号<span class="required">*</span></label>
+        <input class="input-box" id="phone" type="tel" placeholder="请输入法人手机号" value="" maxlength="11">
+        <div class="field-error" id="phone-error"></div>
+      </div>
+      <div class="form-item">
+        <label class="form-label">验证码<span class="required">*</span></label>
+        <div class="input-row">
+          <input class="input-box" id="code" type="text" placeholder="请输入验证码" maxlength="6">
+          <button class="send-code-btn" id="send-code" onclick="sendCode()">获取验证码</button>
+        </div>
+        <div class="field-error" id="code-error"></div>
+      </div>
+    </div>
+    <div class="disclaimer">
+      <div class="disclaimer-title">⚠️ 温馨提示</div>
+      <div class="disclaimer-text">本页面仅用于身份信息核验，核验结果不代表已完成电子签约。通过核验后您将获得开通服务的临时资格，正式签约仍须通过签约通道完成，并以正式签署的协议为准。</div>
+    </div>
+  </div>
+  <div class="footer"><button class="btn-primary" onclick="submitVerify()">提交核验</button><button class="btn-secondary" onclick="goBack()">返回上一步</button></div>
+</div>
+<div class="screen" id="verifying">
+  <div class="status-bar">
+  <div class="status-left">
+    <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="8" width="18" height="4" rx="1" fill="#1A1A1A"/><rect x="0" y="0" width="18" height="4" rx="1" fill="#1A1A1A"/><rect x="2" y="4" width="14" height="4" rx="1" fill="#1A1A1A"/></svg>
+    <span>Sketch</span>
+    <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 0L15.5 11.5H0.5L8 0Z" fill="#1A1A1A"/></svg>
+  </div>
+  <div class="status-time">1:21 AM</div>
+  <div class="status-right">
+    <span>100%</span>
+    <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2" stroke="#1A1A1A" stroke-width="1.2" fill="none"/><rect x="3" y="3" width="16" height="6" rx="1" fill="#1A1A1A"/><path d="M23 4V8C24.5 8 25 7 25 6C25 5 24.5 4 23 4Z" fill="#1A1A1A"/></svg>
+  </div>
+</div>
+  <div class="nav-bar"><div class="nav-back hidden"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#1A1A1A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="nav-title">身份核验</div></div>
+  <div class="result-page state-verifying">
+    <div class="result-icon-wrap"><div class="spinner"></div></div>
+    <div class="result-title">核验处理中</div>
+    <div class="result-sub">正在核验您的身份信息<br>请稍候，通常需要 1-3 秒</div>
+    <div class="warn-box" style="text-align: left;">ℹ️ 提示：核验仅确认身份信息，不代表已完成电子签约。正式签约仍须通过签约通道完成。</div>
+  </div>
+  <div class="footer"><button class="btn-primary" disabled>请稍候…</button></div>
+</div>
+<div class="screen" id="success">
+  <div class="status-bar">
+  <div class="status-left">
+    <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="8" width="18" height="4" rx="1" fill="#1A1A1A"/><rect x="0" y="0" width="18" height="4" rx="1" fill="#1A1A1A"/><rect x="2" y="4" width="14" height="4" rx="1" fill="#1A1A1A"/></svg>
+    <span>Sketch</span>
+    <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 0L15.5 11.5H0.5L8 0Z" fill="#1A1A1A"/></svg>
+  </div>
+  <div class="status-time">1:21 AM</div>
+  <div class="status-right">
+    <span>100%</span>
+    <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2" stroke="#1A1A1A" stroke-width="1.2" fill="none"/><rect x="3" y="3" width="16" height="6" rx="1" fill="#1A1A1A"/><path d="M23 4V8C24.5 8 25 7 25 6C25 5 24.5 4 23 4Z" fill="#1A1A1A"/></svg>
+  </div>
+</div>
+  <div class="nav-bar"><div class="nav-back hidden"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#1A1A1A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="nav-title">核验结果</div></div>
+  <div class="result-page state-success">
+    <div class="result-icon-wrap"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#00c47a"/><path d="M14 24l7 7 13-13" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="result-title">身份核验通过</div>
+    <div class="result-sub">您已获得开通服务的资格<br>请尽快完成正式签约</div>
+    <div class="warn-box">当前核验仅代表完成身份核验，已为您开通服务使用资格。正式签约须通过签约通道完成，届时以正式签署的协议为准。</div>
+  </div>
+  <div class="footer"><button class="btn-primary" onclick="showToast('返回业务系统（示例）')">返回</button><button class="btn-secondary" onclick="showToast('下载未盖章协议文件（示例）')">协议文件下载</button></div>
+</div>
+<div class="screen" id="fail">
+  <div class="status-bar">
+  <div class="status-left">
+    <svg width="18" height="12" viewBox="0 0 18 12" fill="none"><rect x="0" y="8" width="18" height="4" rx="1" fill="#1A1A1A"/><rect x="0" y="0" width="18" height="4" rx="1" fill="#1A1A1A"/><rect x="2" y="4" width="14" height="4" rx="1" fill="#1A1A1A"/></svg>
+    <span>Sketch</span>
+    <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 0L15.5 11.5H0.5L8 0Z" fill="#1A1A1A"/></svg>
+  </div>
+  <div class="status-time">1:21 AM</div>
+  <div class="status-right">
+    <span>100%</span>
+    <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x="1" y="1" width="20" height="10" rx="2" stroke="#1A1A1A" stroke-width="1.2" fill="none"/><rect x="3" y="3" width="16" height="6" rx="1" fill="#1A1A1A"/><path d="M23 4V8C24.5 8 25 7 25 6C25 5 24.5 4 23 4Z" fill="#1A1A1A"/></svg>
+  </div>
+</div>
+  <div class="nav-bar"><div class="nav-back" onclick="goTo('verify')"><svg viewBox="0 0 24 24" fill="none"><path d="M15 18L9 12L15 6" stroke="#1A1A1A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="nav-title">核验结果</div></div>
+  <div class="result-page state-fail">
+    <div class="result-icon-wrap"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#ff3b30"/><path d="M17 17l14 14M31 17L17 31" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></div>
+    <div class="result-title">身份核验未通过</div>
+    <div class="result-sub">验证码错误或核验超时</div>
+    <div class="warn-box">身份核验未通过，请核验后重试。</div>
+  </div>
+  <div class="footer"><button class="btn-primary" onclick="goTo('verify')">重新核验</button><button class="btn-secondary" onclick="goTo('sign-confirm')">返回上一步</button></div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let historyStack = ['sign-confirm'];
+let verifyResult = true;
+
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(screenId).classList.add('active');
+  if (historyStack[historyStack.length - 1] !== screenId) historyStack.push(screenId);
+  window.scrollTo(0, 0);
+}
+function goBack() {
+  if (historyStack.length > 1) {
+    historyStack.pop();
+    const prev = historyStack[historyStack.length - 1];
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(prev).classList.add('active');
+  }
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+function sendCode() {
+  const phone = document.getElementById('phone').value.trim();
+  const err = document.getElementById('phone-error');
+  if (!phone || phone.length < 11) {
+    err.textContent = '请输入正确的法人手机号';
+    document.getElementById('phone').classList.add('error');
+    return;
+  }
+  err.textContent = '';
+  document.getElementById('phone').classList.remove('error');
+  const btn = document.getElementById('send-code');
+  btn.disabled = true;
+  let left = 60;
+  btn.textContent = left + 's 后重发';
+  const timer = setInterval(() => {
+    left--;
+    if (left <= 0) { clearInterval(timer); btn.disabled = false; btn.textContent = '重新获取'; }
+    else { btn.textContent = left + 's 后重发'; }
+  }, 1000);
+  showToast('验证码已发送：123456（演示）');
+}
+function submitVerify() {
+  const phone = document.getElementById('phone').value.trim();
+  const code = document.getElementById('code').value.trim();
+  const phoneErr = document.getElementById('phone-error');
+  const codeErr = document.getElementById('code-error');
+  let hasErr = false;
+  if (!phone || phone.length < 11) { phoneErr.textContent = '请输入正确的法人手机号'; document.getElementById('phone').classList.add('error'); hasErr = true; }
+  else { phoneErr.textContent = ''; document.getElementById('phone').classList.remove('error'); }
+  if (!code || code.length < 4) { codeErr.textContent = '请输入验证码'; document.getElementById('code').classList.add('error'); hasErr = true; }
+  else { codeErr.textContent = ''; document.getElementById('code').classList.remove('error'); }
+  if (hasErr) return;
+  goTo('verifying');
+  setTimeout(() => {
+    if (verifyResult) { goTo('success'); }
+    else { goTo('fail'); }
+  }, 1500);
+}
+</script>
+</body>
+</html>
