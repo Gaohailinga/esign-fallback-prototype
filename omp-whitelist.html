@@ -296,10 +296,8 @@
                     <div class="detail-section-title">基础信息</div>
                     <div class="detail-row"><div class="detail-label">白名单编号：</div><div class="detail-value" id="d-voucherNo">-</div></div>
                     <div class="detail-row"><div class="detail-label">主体类型：</div><div class="detail-value" id="d-subjectType">-</div></div>
-                    <div class="detail-row"><div class="detail-label">机构ID：</div><div class="detail-value" id="d-orgId">-</div></div>
-                    <div class="detail-row"><div class="detail-label">机构名称：</div><div class="detail-value" id="d-orgName">-</div></div>
-                    <div class="detail-row"><div class="detail-label">商户ID：</div><div class="detail-value" id="d-merchantId">-</div></div>
-                    <div class="detail-row"><div class="detail-label">商户名称：</div><div class="detail-value" id="d-merchantName">-</div></div>
+                    <div class="detail-row"><div class="detail-label">机构ID/商户ID：</div><div class="detail-value" id="d-orgId">-</div></div>
+                    <div class="detail-row"><div class="detail-label">机构名称/商户名称：</div><div class="detail-value" id="d-orgName">-</div></div>
                     <div class="detail-row"><div class="detail-label">创建时间：</div><div class="detail-value" id="d-createTime">-</div></div>
                     <div class="detail-row"><div class="detail-label">操作人：</div><div class="detail-value" id="d-operator">-</div></div>
                     <div class="detail-row"><div class="detail-label">备注：</div><div class="detail-value" id="d-remark">-</div></div>
@@ -545,10 +543,9 @@
             const subjectTypeName = item.subjectType === 1 ? '机构' : (item.subjectType === 2 ? '商户' : '-');
             document.getElementById('d-voucherNo').textContent = item.voucherNo;
             document.getElementById('d-subjectType').textContent = subjectTypeName;
-            document.getElementById('d-orgId').textContent = item.orgId || '-';
-            document.getElementById('d-orgName').textContent = item.orgName || '-';
-            document.getElementById('d-merchantId').textContent = item.merchantId || '-';
-            document.getElementById('d-merchantName').textContent = item.merchantName || '-';
+            const isOrg = item.subjectType === 1;
+            document.getElementById('d-orgId').textContent = (isOrg ? item.orgId : item.merchantId) || '-';
+            document.getElementById('d-orgName').textContent = (isOrg ? item.orgName : item.merchantName) || '-';
             const st = statusMap[item.status];
             document.getElementById('d-status').innerHTML = `<span class="tag ${st.class}">${st.name}</span>`;
             document.getElementById('d-skipVerify').textContent = item.skipVerify ? '开启' : '关闭';
