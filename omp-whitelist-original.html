@@ -186,10 +186,8 @@
                                     <th>序号</th>
                                     <th>白名单编号</th>
                                     <th>主体类型</th>
-                                    <th>机构ID</th>
-                                    <th>机构名称</th>
-                                    <th>商户ID</th>
-                                    <th>商户名称</th>
+                                    <th>机构ID/商户ID</th>
+                                    <th>机构名称/商户名称</th>
                                     <th>身份核验状态</th>
                                     <th>创建时间</th>
                                     <th>操作</th>
@@ -345,14 +343,15 @@
             tbody.innerHTML = data.map((item, idx) => {
                 const st = statusMap[item.status];
                 const subjectTypeName = item.subjectType === 1 ? '机构' : (item.subjectType === 2 ? '商户' : '-');
+                const isOrg = item.subjectType === 1;
+                const subId = isOrg ? item.orgId : item.merchantId;
+                const subName = isOrg ? item.orgName : item.merchantName;
                 return `<tr>
                     <td>${idx + 1}</td>
                     <td>${item.voucherNo}</td>
                     <td>${subjectTypeName}</td>
-                    <td>${item.orgId || '-'}</td>
-                    <td>${item.orgName || '-'}</td>
-                    <td>${item.merchantId || '-'}</td>
-                    <td>${item.merchantName || '-'}</td>
+                    <td>${subId || '-'}</td>
+                    <td>${subName || '-'}</td>
                     <td><span class="tag ${st.class}"><span class="status-dot"></span>${st.name}</span></td>
                     <td>${item.createTime}</td>
                     <td>
