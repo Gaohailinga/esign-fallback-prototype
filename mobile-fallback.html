@@ -84,7 +84,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 </style>
 </head>
 <body>
-</div>
+<div class="page-wrapper" id="mobile-wrapper">
 <div class="phone-frame">
 <div class="screen active" id="sign-confirm">
   <div class="status-bar">
@@ -200,7 +200,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
     <div class="result-icon-wrap"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#00c47a"/><path d="M14 24l7 7 13-13" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     <div class="result-title">身份核验通过</div>
     <div class="result-sub">您已获得开通服务的资格<br>请尽快完成正式签约</div>
-    <div class="warn-box">当前核验仅代表完成身份核验，已为您开通服务使用资格。封装层将统一向下游业务层发送“已签约”状态。</div>
+    <div class="warn-box">您已通过平台侧身份核验，服务已临时开通。请尽快完成正式 CA 签约，以免影响后续服务。</div>
   </div>
   <div class="footer"><button class="btn-primary" onclick="showToast('返回业务系统（示例）')">返回</button><button class="btn-secondary" onclick="showToast('下载未盖章协议文件（示例）')">协议文件下载</button></div>
 </div>
@@ -291,5 +291,22 @@ function submitVerify() {
   }, 1500);
 }
 </script>
+
+<div class="annot-layer">
+    <div class="annot" data-annot-id="m-entry" style="top: 460px; left: 470px;">
+        <span class="annot-handle">⋮</span>
+        <strong>兜底入口</strong><br>无常驻入口，仅身份核验状态=「未核验」时展示（命中未核验白名单或自动规则）
+    </div>
+    <div class="annot" data-annot-id="m-verify" style="top: 200px; left: 470px;">
+        <span class="annot-handle">⋮</span>
+        <strong>身份核验（双路径）</strong><br>手机号输入提示「请输入法人{脱敏法人名}手机号」；白名单开启「非法人手机号核验」时仅校验短信验证码（用户无感）
+    </div>
+    <div class="annot" data-annot-id="m-result" style="top: 640px; left: 470px;">
+        <span class="annot-handle">⋮</span>
+        <strong>核验结果</strong><br>通过：展示开通成功页，支持协议文件下载；失败：展示失败页，可重新核验
+    </div>
+</div>
+</div>
+<script src="js/annot-drag.js"></script>
 </body>
 </html>
