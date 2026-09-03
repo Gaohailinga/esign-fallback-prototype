@@ -3,73 +3,58 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>电子签约白名单兜底方案 - 原型导航</title>
+  <title>电子签约兜底方案原型 V4.0</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .container { max-width: 720px; width: 100%; padding: 40px 24px; }
-    h1 {
-      font-size: 28px;
-      color: #1f2329;
-      text-align: center;
-      margin-bottom: 8px;
-    }
-    .subtitle {
-      text-align: center;
-      color: #646a73;
-      font-size: 14px;
-      margin-bottom: 32px;
-    }
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 28px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-      transition: transform 0.2s;
-    }
-    .card:hover { transform: translateY(-2px); }
-    .card-title { font-size: 18px; font-weight: 600; color: #1f2329; margin-bottom: 12px; }
-    .card-desc { font-size: 14px; color: #646a73; margin-bottom: 16px; line-height: 1.6; }
-    a.btn {
-      display: inline-block;
-      padding: 10px 24px;
-      background: #3370ff;
-      color: #fff;
-      border-radius: 6px;
-      text-decoration: none;
-      font-size: 14px;
-      margin-right: 12px;
-      margin-bottom: 8px;
-      transition: background 0.2s;
-    }
-    a.btn:hover { background: #2558d8; }
-    a.btn.ghost { background: #fff; color: #3370ff; border: 1px solid #3370ff; }
-    a.btn.ghost:hover { background: #f0f4ff; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif; background: #f0f2f5; color: #333; padding: 40px 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    .subtitle { color: #666; margin-bottom: 32px; }
+    .card { background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .card h2 { font-size: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .card p { color: #666; font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
+    .btn { display: inline-block; padding: 10px 20px; border-radius: 6px; background: #0d8fd1; color: #fff; text-decoration: none; font-size: 14px; margin-right: 10px; }
+    .btn:hover { background: #0a7ab3; }
+    .btn-secondary { background: #fff; color: #0d8fd1; border: 1px solid #0d8fd1; }
+    .btn-secondary:hover { background: #e6f7ff; }
+    .section-title { font-weight: 600; margin: 16px 0 8px; color: #333; }
+    ul { padding-left: 20px; color: #555; font-size: 14px; line-height: 1.8; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #e6f7ff; color: #0d8fd1; font-size: 12px; margin-left: 8px; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>电子签约白名单兜底方案</h1>
-    <p class="subtitle">评审原型导航 · 2026-08-26 V3.0</p>
+    <h1>电子签约兜底方案原型 V4.0</h1>
+    <div class="subtitle">基于二次评审意见修改 · 2026-09-02</div>
 
     <div class="card">
-      <div class="card-title">OMP 白名单管理（后台）</div>
-      <div class="card-desc">统一门户 → 档案系统 → 白名单管理：列表、新增（主体类型/机构ID/商户ID）、取消、详情（协议文件下载）、操作日志</div>
+      <h2>OMP 白名单管理原型 <span class="tag">评审版</span></h2>
+      <p>包含查询/列表字段拆分、新增白名单自动带出名称不可编辑、新增「非法人手机号核验」开关、列表仅未核验状态可操作开关、详情合并核验信息并增加小眼睛查看完整手机号等 V4.0 调整。</p>
       <a class="btn" href="omp-whitelist.html" target="_blank">打开 OMP 原型</a>
+      <a class="btn btn-secondary" href="omp-whitelist-original.html" target="_blank">纯净版</a>
     </div>
 
     <div class="card">
-      <div class="card-title">封装层兜底入口与身份核验（手机端）</div>
-      <div class="card-desc">商户 H5 可点击 Demo：签约确认页（含兜底入口）→ 身份核验（运营商三要素）→ 开通成功页（协议文件下载）</div>
-      <a class="btn" href="mobile-fallback.html" target="_blank">打开手机端原型</a>
+      <h2>封装层身份核验原型 <span class="tag">评审版</span></h2>
+      <p>包含手机号输入提示含脱敏法人名、温馨提示文案改为「后续仍需正式签约」、成功页说明统一发送「已签约」状态等 V4.0 调整。</p>
+      <a class="btn" href="mobile-fallback.html" target="_blank">打开封装层原型</a>
+      <a class="btn btn-secondary" href="mobile-fallback-original.html" target="_blank">纯净版</a>
+    </div>
+
+    <div class="card">
+      <h2>V4.0 核心变更点</h2>
+      <ul>
+        <li>OMP 查询框与列表字段：机构 ID、商户 ID、机构名称、商户名称独立</li>
+        <li>新增白名单：主体类型选择，ID 自动带出名称且不可编辑</li>
+        <li>新增「非法人手机号核验」开关，默认关闭；开启后仅校验短信验证码</li>
+        <li>列表增加开关列，仅「未核验」状态可操作，其他状态只读</li>
+        <li>身份核验页：手机号输入提示含脱敏法人名</li>
+        <li>运营商三要素核验时，姓名和身份证从机构/商户表自动获取</li>
+        <li>兜底入口仅在「未核验」状态展示</li>
+        <li>封装层统一向下游发送「已签约」状态，不附加标识</li>
+        <li>OMP 详情取消「核验信息」页签，合并到「白名单信息」</li>
+        <li>脱敏手机号增加小眼睛，点击查看完整手机号</li>
+      </ul>
     </div>
   </div>
 </body>
