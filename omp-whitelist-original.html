@@ -96,7 +96,6 @@
         .switch input:checked + .switch-slider { background: #0d8fd1; }
         .switch input:checked + .switch-slider::before { transform: translateX(22px); }
         .switch input:disabled + .switch-slider { opacity: 0.5; cursor: not-allowed; }
-        .table-switch { cursor: pointer; }
         .link-primary { color: #0d8fd1; text-decoration: none; }
         .link-primary:hover { text-decoration: underline; }
         .view-mobile-link { margin-left: 8px; font-size: 13px; }
@@ -191,7 +190,6 @@
                                     <th>机构名称</th>
                                     <th>商户ID</th>
                                     <th>商户名称</th>
-                                    <th>非法人手机号核验</th>
                                     <th>身份核验状态</th>
                                     <th>创建时间</th>
                                     <th>操作</th>
@@ -347,8 +345,6 @@
             tbody.innerHTML = data.map((item, idx) => {
                 const st = statusMap[item.status];
                 const subjectTypeName = item.subjectType === 1 ? '机构' : (item.subjectType === 2 ? '商户' : '-');
-                const isEditable = item.status === 1;
-                const switchChecked = item.skipVerify ? 'checked' : '';
                 return `<tr>
                     <td>${idx + 1}</td>
                     <td>${item.voucherNo}</td>
@@ -357,13 +353,6 @@
                     <td>${item.orgName || '-'}</td>
                     <td>${item.merchantId || '-'}</td>
                     <td>${item.merchantName || '-'}</td>
-                    <td>
-                        <label class="switch table-switch" title="仅身份未核验状态下支持开启" onclick="onSwitchClick(${item.id}, ${isEditable ? 'true' : 'false'})">
-                            <input type="checkbox" ${switchChecked} onchange="toggleSkipVerify(${item.id}, this.checked)">
-                            <span class="switch-slider"></span>
-                        </label>
-                        <div style="font-size: 11px; color: #888; margin-top: 4px;">${item.skipVerify ? '开启' : '关闭'}</div>
-                    </td>
                     <td><span class="tag ${st.class}"><span class="status-dot"></span>${st.name}</span></td>
                     <td>${item.createTime}</td>
                     <td>
@@ -507,26 +496,6 @@
             closeModal('addModal');
             renderList(mockData);
             showToast('新增白名单成功', 'success');
-        }
-
-        function onSwitchClick(id, editable) {
-            if (!editable) {
-                showToast('仅身份未核验状态下支持开启', 'error');
-                return false;
-            }
-        }
-
-        function toggleSkipVerify(id, checked) {
-            const item = mockData.find(d => d.id === id);
-            if (!item) return;
-            if (item.status !== 1) {
-                showToast('仅身份未核验状态下支持开启', 'error');
-                renderList(mockData);
-                return;
-            }
-            item.skipVerify = checked;
-            showToast('已' + (checked ? '开启' : '关闭') + '非法人手机号核验', 'success');
-            renderList(mockData);
         }
 
         let cancellingId = null;
