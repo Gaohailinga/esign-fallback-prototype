@@ -318,7 +318,7 @@
                         </div>
                     </div>
                     <div class="detail-row"><div class="detail-label">核验通过时间：</div><div class="detail-value" id="d-verifyTime">-</div></div>
-                    <div class="detail-row"><div class="detail-label"></div><div class="detail-value"><a href="javascript:void(0);" onclick="showToast('下载协议文件（示例）','success')" class="link-primary">协议文件下载</a></div></div>
+                    <div class="detail-row"><div class="detail-label"></div><div class="detail-value"><a href="javascript:void(0);" onclick="downloadAgreement()" class="link-primary">协议文件下载</a></div></div>
                 </div>
                 <div id="tab-log" class="hidden">
                     <div id="d-logs"></div>
@@ -336,11 +336,12 @@
         };
         const statusMap = {1: {name: '未核验', class: 'tag-inactive'}, 2: {name: '已核验', class: 'tag-active'}, 4: {name: '已取消', class: 'tag-cancelled'}};
         const verifyMap = {'': '-', 'three-element': '法人信息运营商三要素核验', 'captcha': '非法人手机号验证码核验'};
+        const CURRENT_OPERATOR = 'P500009';
         let mockData = [
-            {id: 1, voucherNo: 'SVC202607310001', subjectType: 1, orgId: 'ORG00012345', orgName: '北京天阙科技有限公司', merchantId: '', merchantName: '', skipVerify: false, mobile: '13812345678', maskedMobile: '138****5678', status: 2, createTime: '2026-07-31 10:00:00', verifyMethod: 'three-element', verifyTime: '2026-07-31 10:05:22', operator: 'admin', remark: '运营手动加白'},
-            {id: 2, voucherNo: 'SVC202607310002', subjectType: 2, orgId: 'ORG00012346', orgName: '随行付支付有限公司', merchantId: '', merchantName: '', skipVerify: false, mobile: '', maskedMobile: '', status: 1, createTime: '2026-07-31 09:30:00', verifyMethod: '', verifyTime: '', operator: 'admin', remark: '事业单位类型'},
-            {id: 3, voucherNo: 'SVC202607300003', subjectType: 1, orgId: 'ORG00012347', orgName: '重庆鑫联随行科技有限公司', merchantId: '', merchantName: '', skipVerify: true, mobile: '13912341234', maskedMobile: '139****1234', status: 2, createTime: '2026-07-01 11:00:00', verifyMethod: 'captcha', verifyTime: '2026-07-01 11:10:00', operator: 'admin', remark: '法人护照，走验证码核验'},
-            {id: 4, voucherNo: 'SVC202607290004', subjectType: 2, orgId: 'ORG00012348', orgName: '上海测试科技有限公司', merchantId: '', merchantName: '', skipVerify: false, mobile: '13712349876', maskedMobile: '137****9876', status: 4, createTime: '2026-07-15 14:00:00', verifyMethod: 'three-element', verifyTime: '2026-07-15 14:20:00', operator: 'admin', remark: '运营手动取消白名单'}
+            {id: 1, voucherNo: 'SVC202607310001', subjectType: 1, orgId: 'ORG00012345', orgName: '北京天阙科技有限公司', merchantId: '', merchantName: '', skipVerify: false, mobile: '13812345678', maskedMobile: '138****5678', status: 2, createTime: '2026-07-31 10:00:00', verifyMethod: 'three-element', verifyTime: '2026-07-31 10:05:22', operator: 'admin', remark: '运营手动加白', source: 'manual'},
+            {id: 2, voucherNo: 'SVC202607310002', subjectType: 2, orgId: 'ORG00012346', orgName: '随行付支付有限公司', merchantId: '', merchantName: '', skipVerify: false, mobile: '', maskedMobile: '', status: 1, createTime: '2026-07-31 09:30:00', verifyMethod: '', verifyTime: '', operator: 'admin', remark: '事业单位类型（统一社会信用代码 N 开头）', source: 'auto', hitRule: 'AUTO_01'},
+            {id: 3, voucherNo: 'SVC202607300003', subjectType: 1, orgId: 'ORG00012347', orgName: '重庆鑫联随行科技有限公司', merchantId: '', merchantName: '', skipVerify: true, mobile: '13912341234', maskedMobile: '139****1234', status: 2, createTime: '2026-07-01 11:00:00', verifyMethod: 'captcha', verifyTime: '2026-07-01 11:10:00', operator: 'admin', remark: '法人护照，走验证码核验', source: 'manual'},
+            {id: 4, voucherNo: 'SVC202607290004', subjectType: 2, orgId: 'ORG00012348', orgName: '上海测试科技有限公司', merchantId: '', merchantName: '', skipVerify: false, mobile: '13712349876', maskedMobile: '137****9876', status: 4, createTime: '2026-07-15 14:00:00', verifyMethod: 'three-element', verifyTime: '2026-07-15 14:20:00', operator: 'admin', remark: '运营手动取消白名单', source: 'manual'}
         ];
 
         function renderList(data) {
@@ -495,7 +496,8 @@
                 verifyMethod: '',
                 verifyTime: '',
                 operator: 'P500009',
-                remark: remark
+                remark: remark,
+                source: 'manual'
             });
             closeModal('addModal');
             renderList(mockData);
@@ -629,13 +631,42 @@
             document.getElementById('d-mobile').style.color = '#ff4d4f';
             document.getElementById('mobile-verify-panel').classList.add('hidden');
             document.getElementById('d-view-mobile').style.display = 'none';
+            addAccessLog('查看手机号', `运营人员 ${CURRENT_OPERATOR} 查看了完整手机号`);
+            renderDetailLogs();
+        }
+
+        function downloadAgreement() {
+            addAccessLog('下载协议文件', `运营人员 ${CURRENT_OPERATOR} 下载了协议文件`);
+            renderDetailLogs();
+            showToast('协议文件下载成功（示例）', 'success');
+        }
+
+        function renderDetailLogs() {
+            const item = window.currentDetailItem;
+            if (!item) return;
+            document.getElementById('d-logs').innerHTML = generateLogs(item);
+        }
+
+        function addAccessLog(type, content) {
+            const item = window.currentDetailItem;
+            if (!item) return;
+            if (!item.accessLogs) item.accessLogs = [];
+            item.accessLogs.push({time: formatDateTime(new Date()), type: type, content: content});
         }
 
         function generateLogs(item) {
             const logs = [];
-            logs.push({time: item.createTime, type: '创建', content: `运营人员 ${item.operator} 新增白名单`});
+            if (item.source === 'auto') {
+                logs.push({time: item.createTime, type: '创建', content: `系统命中自动规则 ${item.hitRule || '-'}，自动生成白名单`});
+            } else {
+                logs.push({time: item.createTime, type: '创建', content: `运营人员 ${item.operator} 新增白名单`});
+            }
             if (item.verifyTime) logs.push({time: item.verifyTime, type: '已核验', content: `身份核验通过，核验方式：${verifyMap[item.verifyMethod]}，脱敏手机号：${item.maskedMobile || '-'}`});
-            if (item.status === 4 && item.remark && item.remark.includes('运营手动取消白名单')) logs.push({time: item.updated_at || item.createTime, type: '取消', content: item.remark || `运营人员取消白名单`});
+            if (item.status === 4 && item.remark && item.remark.includes('运营手动取消白名单')) {
+                const m = item.remark.match(/原因：([^；]+)/);
+                logs.push({time: item.updated_at || item.createTime, type: '取消', content: `运营人员 ${item.operator} 取消白名单，原因：${m ? m[1].trim() : '-'}`});
+            }
+            (item.accessLogs || []).forEach(l => logs.push(l));
             return logs.map(l => `<div class="log-item"><span class="log-time">${l.time}</span><span class="log-type">${l.type}</span>${l.content}</div>`).join('');
         }
 
@@ -706,6 +737,10 @@
         <div class="annot" data-annot-id="omp-stats" style="top: 100px; left: 20px;">
             <span class="annot-handle">⋮</span>
             <strong>统计面板</strong><br>总数 / 未核验 / 已核验 / 已取消
+        </div>
+        <div class="annot" data-annot-id="omp-log" style="top: 700px; left: 1120px;">
+            <span class="annot-handle">⋮</span>
+            <strong>操作日志（穷举）</strong><br>创建（手动新增／自动规则命中，文案区分）／已核验／取消／查看手机号／下载协议文件
         </div>
     </div>
 </div>
